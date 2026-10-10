@@ -1,6 +1,8 @@
 .DS_Store
 .env
 /node_modules/
+/.idea/
+/.claude/
 
 # React Router
 /.react-router/
