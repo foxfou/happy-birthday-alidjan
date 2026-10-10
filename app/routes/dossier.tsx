@@ -4,6 +4,7 @@ import { Form, redirect, useSubmit } from "react-router";
 import type { Route } from "./+types/dossier";
 import { Stage } from "~/components/stage";
 import { KNOW, MAX_SKILLS, REASONS, SKILLS } from "~/config";
+import { apiEnabled, sendRsvp } from "~/lib/api";
 import { burst } from "~/lib/burst";
 import { loadGuest, saveGuest } from "~/lib/guest";
 import { prefersReducedMotion } from "~/lib/motion";
@@ -24,7 +25,9 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
 
   const know = Number(form.get("know"));
   const reason = String(form.get("reason"));
-  saveGuest({
+  const previous = loadGuest();
+  const guest = {
+    id: previous?.id ?? crypto.randomUUID(),
     name,
     know: KNOW[know] ? know : 2,
     reason: REASONS.includes(reason) ? reason : REASONS[0],
@@ -33,8 +36,13 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
       .map(String)
       .filter((skill) => SKILLS.includes(skill))
       .slice(0, MAX_SKILLS),
-    seat: loadGuest()?.seat ?? null,
-  });
+    seat: previous?.seat ?? null,
+    sent: previous?.sent ?? false,
+  };
+  saveGuest(guest);
+  // Анкета попадает в список именинника сразу, не дожидаясь выбора места. Ответа
+  // не ждём: если сервер недоступен, данные дойдут вместе с местом или сообщением от гостя.
+  if (apiEnabled) void sendRsvp(guest).catch(() => {});
   return redirect("/check");
 }
 

@@ -1,11 +1,15 @@
 import { redirect } from "react-router";
 
 export type Guest = {
+  /** Случайный идентификатор анкеты: по нему сервер отличает гостей друг от друга. */
+  id: string;
   name: string;
   know: number;
   reason: string;
   skills: string[];
   seat: number | null;
+  /** Сервер знает о текущем месте гостя. */
+  sent: boolean;
 };
 
 const KEY = "ali-bd-2610";
@@ -13,7 +17,13 @@ const KEY = "ali-bd-2610";
 export function loadGuest(): Guest | null {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? (JSON.parse(raw) as Guest) : null;
+    if (!raw) return null;
+    const stored = JSON.parse(raw) as Guest;
+    if (stored.id) return stored;
+    // Анкеты, сохранённые до появления сервера, идентификатора не имели.
+    const guest = { ...stored, id: crypto.randomUUID(), sent: false };
+    saveGuest(guest);
+    return guest;
   } catch {
     return null;
   }

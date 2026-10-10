@@ -6,6 +6,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useNavigation,
 } from "react-router";
 
 import type { Route } from "./+types/root";
@@ -76,9 +77,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Sheet({ children }: { children: React.ReactNode }) {
+function Sheet({
+  children,
+  busy,
+}: {
+  children: React.ReactNode;
+  busy?: boolean;
+}) {
   return (
-    <main className="sheet" data-case={`Дело № ${EVENT.caseNo}`}>
+    <main
+      className="sheet"
+      data-case={`Дело № ${EVENT.caseNo}`}
+      aria-busy={busy}
+    >
       <span className="tape" aria-hidden="true" />
       <span className="staple" aria-hidden="true" />
       <span className="cup-ring" aria-hidden="true" />
@@ -92,10 +103,13 @@ function Sheet({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  // Переход на шаг, которому нужны данные с сервера, может занять пару секунд.
+  const loading = useNavigation().state === "loading";
+
   return (
     <>
       <SoundToggle />
-      <Sheet>
+      <Sheet busy={loading}>
         <Outlet />
       </Sheet>
     </>

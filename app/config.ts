@@ -11,8 +11,15 @@ export const EVENT = {
   dress: "", // например: «Без галстуков»; если пусто — строка скрыта
   ownerTg: "", // Telegram-ник Али без @, например "ali_name"
   hostSeat: 1,
-  takenSeats: [] as number[], // занятые места: [3, 7]
+  takenSeats: [] as number[], // занятые места, пока сервер не подключён: [3, 7]
 };
+
+// Адрес функции в Yandex Cloud (backend/). С пустой строкой сайт работает без сервера:
+// анкеты никуда не уходят, гость сам отправляет сообщение имениннику.
+// Для локальной разработки адрес можно подменить переменной VITE_API_URL.
+export const API_URL: string =
+  import.meta.env.VITE_API_URL ??
+  "https://functions.yandexcloud.net/d4ec39qqfldcjv65vbg4";
 /* ======================================================== */
 
 export const KNOW = [
