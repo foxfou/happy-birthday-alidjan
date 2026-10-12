@@ -3,11 +3,11 @@ import { Link } from "react-router";
 import type { Route } from "./+types/invitation";
 import { Stage } from "~/components/stage";
 import { EVENT } from "~/config";
-import { requireGuest } from "~/lib/guest";
+import { requirePendingGuest } from "~/lib/guest";
 import { sfx } from "~/lib/sfx";
 
 export function clientLoader() {
-  return requireGuest();
+  return requirePendingGuest();
 }
 
 export default function Invitation({

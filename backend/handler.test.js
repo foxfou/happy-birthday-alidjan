@@ -2,26 +2,24 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
 
+const { createFileStore, memoryBlob } = require("./file-store");
 const { createHandler } = require("./handler");
-const { createMemoryStore } = require("./memory-store");
 
 const ADMIN_KEY = "secret";
 const id = (/** @type {number} */ n) =>
   `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 
-function setup() {
+function setup(blob = memoryBlob()) {
   const handler = createHandler({
     adminKey: ADMIN_KEY,
-    store: createMemoryStore(),
+    store: createFileStore(blob),
   });
 
-  /** @param {object} body @param {boolean} [base64] */
-  const post = async (body, base64 = false) => {
-    const json = JSON.stringify(body);
+  /** @param {object} body */
+  const post = async (body) => {
     const response = await handler({
       httpMethod: "POST",
-      body: base64 ? Buffer.from(json).toString("base64") : json,
-      isBase64Encoded: base64,
+      body: JSON.stringify(body),
     });
     return { status: response.statusCode, data: JSON.parse(response.body) };
   };
@@ -79,6 +77,44 @@ test("занятое место нельзя занять второй раз, �
   });
 });
 
+test("одновременные запросы на одно место: проходит ровно один", async () => {
+  // Медленное хранилище: без очереди оба запроса прочитали бы пустой файл и оба записались.
+  const slow = memoryBlob();
+  const pause = () => new Promise((resolve) => setTimeout(resolve, 15));
+  const { rsvp, guest, post } = setup({
+    read: async () => (await pause(), slow.read()),
+    write: async (text) => (await pause(), slow.write(text)),
+  });
+
+  const results = await Promise.all([
+    rsvp(guest(1, { seat: 10 })),
+    rsvp(guest(2, { seat: 10 })),
+    rsvp(guest(3, { seat: 10 })),
+  ]);
+  assert.deepEqual(results.map((r) => r.status).sort(), [200, 409, 409]);
+
+  const { guests } = (await post({ action: "list", key: ADMIN_KEY })).data;
+  assert.equal(guests.length, 1, "проигравшие в файл не попали");
+});
+
+test("анкеты переживают перезапуск сервиса: всё состояние в файле", async () => {
+  const blob = memoryBlob();
+  await setup(blob).rsvp({
+    id: id(1),
+    name: "Гость 1",
+    know: 2,
+    reason: "Торт",
+    skills: [],
+    seat: 7,
+  });
+
+  // Новый обработчик поверх того же файла — как новый экземпляр контейнера.
+  const { rsvp, guest, handler } = setup(blob);
+  assert.equal((await rsvp(guest(2, { seat: 7 }))).status, 409);
+  const seats = await handler({ httpMethod: "GET" });
+  assert.deepEqual(JSON.parse(seats.body), { taken: [7] });
+});
+
 test("опоздавшая анкета без места не стирает уже выбранное место", async () => {
   const { rsvp, guest, post } = setup();
   await rsvp(guest(1, { seat: 5 }));
@@ -110,12 +146,6 @@ test("некорректные данные отклоняются с имене
   assert.equal((await post({ action: "rsvp", pad: "x".repeat(5000) })).status, 400);
 });
 
-test("тело в base64 (так функция получает text/plain) разбирается", async () => {
-  const { post, guest } = setup();
-  const result = await post({ action: "rsvp", guest: guest(1, { seat: 4 }) }, true);
-  assert.deepEqual(result, { status: 200, data: { ok: true, taken: [4] } });
-});
-
 test("список и удаление доступны только с ключом", async () => {
   const { rsvp, guest, post } = setup();
   await rsvp(guest(1, { seat: 7 }));
@@ -132,6 +162,27 @@ test("список и удаление доступны только с ключ
 
   assert.equal((await post({ action: "remove", key: ADMIN_KEY, id: id(1) })).status, 200);
   assert.deepEqual((await rsvp(guest(2, { seat: 7 }))).data, { ok: true, taken: [7] });
+});
+
+test("по id сайт узнаёт, есть ли анкета на сервере и какое за ней место", async () => {
+  const { handler, rsvp, guest, post } = setup();
+  const status = async (/** @type {number} */ n) => {
+    const response = await handler({
+      httpMethod: "GET",
+      queryStringParameters: { id: id(n) },
+    });
+    return JSON.parse(response.body);
+  };
+
+  assert.deepEqual(await status(1), { taken: [], guest: null });
+  await rsvp(guest(1));
+  assert.deepEqual(await status(1), { taken: [], guest: { seat: null } });
+  await rsvp(guest(1, { seat: 4 }));
+  assert.deepEqual(await status(1), { taken: [4], guest: { seat: 4 } });
+
+  // Именинник удалил анкету — сайт гостя увидит это и начнёт приглашение заново.
+  await post({ action: "remove", key: ADMIN_KEY, id: id(1) });
+  assert.deepEqual(await status(1), { taken: [], guest: null });
 });
 
 test("без ADMIN_KEY админские действия закрыты для всех", async () => {

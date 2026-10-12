@@ -14,12 +14,11 @@ export const EVENT = {
   takenSeats: [] as number[], // занятые места, пока сервер не подключён: [3, 7]
 };
 
-// Адрес функции в Yandex Cloud (backend/). С пустой строкой сайт работает без сервера:
+// Адрес сервиса анкет (backend/). С пустой строкой сайт работает без сервера:
 // анкеты никуда не уходят, гость сам отправляет сообщение имениннику.
 // Для локальной разработки адрес можно подменить переменной VITE_API_URL.
 export const API_URL: string =
-  import.meta.env.VITE_API_URL ??
-  "https://functions.yandexcloud.net/d4ec39qqfldcjv65vbg4";
+  import.meta.env.VITE_API_URL ?? "https://birthday-api.containerapps.ru";
 /* ======================================================== */
 
 export const KNOW = [

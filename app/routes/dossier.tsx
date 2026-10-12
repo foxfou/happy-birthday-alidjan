@@ -15,7 +15,10 @@ const NAME_ERROR =
 const MAX_DODGES = 5;
 
 export function clientLoader() {
-  return loadGuest();
+  const guest = loadGuest();
+  // Место выбрано — дело закрыто, досье больше не правится.
+  if (guest?.seat) throw redirect("/pass");
+  return guest;
 }
 
 export async function clientAction({ request }: Route.ClientActionArgs) {
@@ -36,8 +39,8 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
       .map(String)
       .filter((skill) => SKILLS.includes(skill))
       .slice(0, MAX_SKILLS),
-    seat: previous?.seat ?? null,
-    sent: previous?.sent ?? false,
+    seat: null,
+    sent: false,
   };
   saveGuest(guest);
   // Анкета попадает в список именинника сразу, не дожидаясь выбора места. Ответа

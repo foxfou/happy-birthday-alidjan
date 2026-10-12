@@ -274,9 +274,6 @@
     border-color: var(--color-ok);
     color: var(--color-ok);
   }
-  .stamp.small {
-    font-size: 22px;
-  }
   .stamp.pop {
     animation: slam 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) both;
   }
@@ -524,10 +521,10 @@
     border-radius: 4px;
     background: repeating-linear-gradient(135deg, transparent 0 14px, rgb(31 42 61 / 0.035) 14px 15px);
   }
-  .card time {
+  :is(.card, .pass) time {
     display: block;
   }
-  .card .when {
+  :is(.card, .pass) .when {
     display: block;
     margin: 10px 0 4px;
     font-family: var(--font-head);
@@ -535,14 +532,95 @@
     font-size: 34px;
     line-height: 1.1;
   }
-  .card .time {
+  :is(.card, .pass) .time {
     display: block;
     color: var(--color-stamp);
     font-family: var(--font-head);
     font-size: 26px;
   }
-  .card .facts {
+  :is(.card, .pass) .facts {
     margin-top: 16px;
+  }
+
+  /* ---------- пропуск: итог дела ---------- */
+  .pass {
+    margin: 14px 0 22px;
+    border: 2px solid var(--color-ink);
+    border-radius: 4px;
+    background: repeating-linear-gradient(135deg, transparent 0 14px, rgb(31 42 61 / 0.035) 14px 15px);
+  }
+  .pass-head,
+  .pass-foot {
+    padding: 7px 16px;
+    font-family: var(--font-head);
+    font-weight: 500;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-shadow: none;
+    text-transform: uppercase;
+  }
+  .pass-head {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+  .pass-foot {
+    border-top: 1px dashed var(--color-line);
+    color: var(--color-muted);
+  }
+  .pass-body {
+    padding: 16px 16px 12px;
+  }
+  .pass-who {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 14px;
+    align-items: start;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--color-line);
+  }
+  .pass-label {
+    display: block;
+    color: var(--color-muted);
+    font-size: 12px;
+  }
+  .pass-name {
+    display: block;
+    margin-top: 2px;
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 30px;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+  .pass-seat {
+    min-width: 84px;
+    padding: 6px 12px 8px;
+    border: 2px solid var(--color-stamp);
+    border-radius: 4px;
+    color: var(--color-stamp);
+    text-align: center;
+  }
+  .pass-seat .pass-label {
+    color: inherit;
+  }
+  .pass-seat strong {
+    display: block;
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 48px;
+    line-height: 1;
+  }
+  .pass .facts {
+    font-size: 14px;
+  }
+  .pass-stamp {
+    display: block;
+    width: fit-content;
+    margin: 16px 6px 4px auto;
+    font-size: 24px;
+  }
+  .stage-enter .pass-stamp {
+    animation: slam 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) 0.45s both;
   }
 
   /* ---------- места за столом ---------- */
@@ -694,6 +772,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .stage-enter,
+    .stage-enter .pass-stamp,
     .stamp.hero,
     .stamp.pop,
     .log p {

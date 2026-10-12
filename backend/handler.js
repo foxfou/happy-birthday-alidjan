@@ -1,9 +1,9 @@
 // @ts-check
-// HTTP-слой функции: разбор запроса, маршруты, ответы. База приходит снаружи,
-// поэтому в тестах подставляется хранилище в памяти.
+// Логика HTTP-запросов сервиса: разбор, маршруты, ответы. Хранилище приходит
+// снаружи, поэтому в тестах подставляется файл в памяти.
 const { createHash, timingSafeEqual } = require("node:crypto");
 
-const { parseGuest } = require("./rsvp");
+const { parseGuest, takenSeats } = require("./rsvp");
 
 const MAX_BODY_BYTES = 4096;
 
@@ -31,11 +31,8 @@ function isAdmin(key, adminKey) {
   return timingSafeEqual(digest(key), digest(adminKey));
 }
 
-/** @param {{ body?: string, isBase64Encoded?: boolean }} event */
-function parseBody(event) {
-  const raw = event.isBase64Encoded
-    ? Buffer.from(event.body ?? "", "base64").toString("utf8")
-    : (event.body ?? "");
+/** @param {string} [raw] */
+function parseBody(raw = "") {
   if (Buffer.byteLength(raw) > MAX_BODY_BYTES) return null;
   try {
     const body = JSON.parse(raw);
@@ -49,7 +46,6 @@ function parseBody(event) {
  * @typedef {import("./rsvp").Guest} Guest
  * @typedef {import("./rsvp").GuestInput} GuestInput
  * @typedef {object} Store
- * @property {() => Promise<number[]>} takenSeats
  * @property {(input: GuestInput) => Promise<ReturnType<typeof import("./rsvp").planRsvp>>} saveGuest
  * @property {() => Promise<Guest[]>} listGuests
  * @property {(id: string) => Promise<void>} removeGuest
@@ -61,14 +57,27 @@ function parseBody(event) {
  * @param {string} [deps.adminKey] ключ из секретной ссылки именинника
  */
 function createHandler({ store, adminKey }) {
-  /** @param {{ httpMethod?: string, body?: string, isBase64Encoded?: boolean }} event */
+  /**
+   * @param {object} event
+   * @param {string} [event.httpMethod]
+   * @param {Record<string, string> | null} [event.queryStringParameters]
+   * @param {string} [event.body]
+   */
   return async function handler(event) {
     const method = event.httpMethod ?? "GET";
     if (method === "OPTIONS") return respond(204);
-    if (method === "GET") return respond(200, { taken: await store.takenSeats() });
+    if (method === "GET") {
+      const guests = await store.listGuests();
+      const taken = takenSeats(guests);
+      // С ?id= сайт заодно узнаёт, жива ли анкета гостя: именинник мог её удалить.
+      const id = event.queryStringParameters?.id;
+      if (!id) return respond(200, { taken });
+      const guest = guests.find((item) => item.id === id);
+      return respond(200, { taken, guest: guest ? { seat: guest.seat } : null });
+    }
     if (method !== "POST") return respond(405, { error: "method" });
 
-    const body = parseBody(event);
+    const body = parseBody(event.body);
     if (!body) return respond(400, { error: "invalid", field: "body" });
 
     switch (body.action) {

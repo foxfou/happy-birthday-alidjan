@@ -4,7 +4,7 @@ import { Link } from "react-router";
 import type { Route } from "./+types/check";
 import { Stage } from "~/components/stage";
 import { KNOW, STATUS } from "~/config";
-import { type Guest, requireGuest } from "~/lib/guest";
+import { type Guest, requirePendingGuest } from "~/lib/guest";
 import { prefersReducedMotion } from "~/lib/motion";
 import { sfx } from "~/lib/sfx";
 
@@ -12,7 +12,7 @@ const LEAD_MS = 500;
 const STEP_MS = 700;
 
 export function clientLoader() {
-  return requireGuest();
+  return requirePendingGuest();
 }
 
 function checkLines({ name, know, reason, skills }: Guest) {

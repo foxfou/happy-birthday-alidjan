@@ -6,5 +6,6 @@ export default [
   route("check", "routes/check.tsx"),
   route("invitation", "routes/invitation.tsx"),
   route("seat", "routes/seat.tsx"),
+  route("pass", "routes/pass.tsx"),
   route("guests/:key", "routes/guests.tsx"),
 ] satisfies RouteConfig;

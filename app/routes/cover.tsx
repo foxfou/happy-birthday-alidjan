@@ -9,9 +9,9 @@ import { sfx } from "~/lib/sfx";
 export default function Cover() {
   const navigate = useNavigate();
 
-  // Гость, уже занявший место, сразу возвращается к своему столу.
+  // Гость, уже занявший место, сразу возвращается к своему пропуску.
   useEffect(() => {
-    if (loadGuest()?.seat) navigate("/seat", { replace: true });
+    if (loadGuest()?.seat) navigate("/pass", { replace: true });
   }, [navigate]);
 
   return (

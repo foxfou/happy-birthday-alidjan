@@ -41,9 +41,23 @@ export function clearGuest() {
   } catch {}
 }
 
-/** Для шагов после досье: без заполненного досье дальше не пускаем. */
-export function requireGuest(): Guest {
+export type SeatedGuest = Guest & { seat: number };
+
+/**
+ * Шаги между досье и местом: без досье возвращаем к нему, а тем, кто место уже
+ * выбрал, показываем только пропуск — менять в деле больше нечего.
+ */
+export function requirePendingGuest(): Guest {
   const guest = loadGuest();
   if (!guest?.name) throw redirect("/dossier");
+  if (guest.seat) throw redirect("/pass");
   return guest;
+}
+
+/** Пропуск выдаётся только после выбора места. */
+export function requireSeatedGuest(): SeatedGuest {
+  const guest = loadGuest();
+  if (!guest?.name) throw redirect("/dossier");
+  if (!guest.seat) throw redirect("/seat");
+  return guest as SeatedGuest;
 }

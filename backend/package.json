@@ -1,13 +1,13 @@
 {
   "name": "happy-birthday-alidjan-backend",
   "private": true,
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
     "test": "node --test",
-    "dev": "node dev-server.js",
     "deploy": "node deploy.js"
   },
   "dependencies": {
-    "ydb-sdk": "^5.11.1"
+    "aws4fetch": "^1.0.20"
   }
 }
