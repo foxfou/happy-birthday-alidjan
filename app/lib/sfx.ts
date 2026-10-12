@@ -1,4 +1,6 @@
-/* Звук: эффекты синтезируются в браузере, голосовые фразы — mp3 из assets. */
+/* Звук: эффекты синтезируются в браузере, голосовые фразы — mp3 из assets.
+   Эффекты нарочно мягкие: синус и треугольник вместо меандра и пилы, шум только
+   приглушённый, атака без щелчка — резкие «пиксельные» звуки режут слух. */
 
 const MUTE_KEY = "ali-bd-2610-mute";
 
@@ -44,13 +46,26 @@ function audio() {
   return ctx;
 }
 
+let soft: BiquadFilterNode | null = null;
+
+/** Общий выход эффектов: фильтр срезает верх, который делает звук колючим. */
+function output(c: AudioContext) {
+  if (!soft) {
+    soft = c.createBiquadFilter();
+    soft.type = "lowpass";
+    soft.frequency.value = 5000;
+    soft.connect(c.destination);
+  }
+  return soft;
+}
+
 function tone(
   freq: number,
   dur: number,
-  type: OscillatorType = "sine",
-  vol = 0.15,
+  vol = 0.1,
   at = 0,
   to?: number,
+  type: OscillatorType = "sine",
 ) {
   const c = audio();
   if (!c || muted) return;
@@ -61,20 +76,21 @@ function tone(
   osc.frequency.setValueAtTime(freq, t);
   if (to) osc.frequency.exponentialRampToValueAtTime(to, t + dur);
   gain.gain.setValueAtTime(0.0001, t);
-  gain.gain.exponentialRampToValueAtTime(vol, t + 0.008);
+  gain.gain.exponentialRampToValueAtTime(vol, t + Math.min(0.012, dur / 3));
   gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   osc.connect(gain);
-  gain.connect(c.destination);
+  gain.connect(output(c));
   osc.start(t);
   osc.stop(t + dur + 0.02);
 }
 
 function noise(
   dur: number,
-  vol = 0.2,
+  vol = 0.1,
   freq = 800,
   kind: BiquadFilterType = "lowpass",
   at = 0,
+  attack = 0.004,
 ) {
   const c = audio();
   if (!c || muted) return;
@@ -89,11 +105,12 @@ function noise(
   filter.type = kind;
   filter.frequency.value = freq;
   const gain = c.createGain();
-  gain.gain.setValueAtTime(vol, t);
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(vol, t + attack);
   gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   src.connect(filter);
   filter.connect(gain);
-  gain.connect(c.destination);
+  gain.connect(output(c));
   src.start(t);
 }
 
@@ -134,6 +151,9 @@ function nextVoice() {
 }
 
 let lastTick = 0;
+// Щелчки ходят по пентатонике от ре первой октавы: любые соседние ноты созвучны.
+const TICK_BASE = 294;
+const PENTATONIC = [1, 9 / 8, 5 / 4, 3 / 2, 5 / 3];
 
 export const sfx = {
   /** Проигрывает голосовую фразу; false — если звука нет и нужна замена. */
@@ -157,51 +177,57 @@ export const sfx = {
     return true;
   },
   party() {
-    noise(0.18, 0.55, 1800, "bandpass");
-    tone(300, 0.25, "sawtooth", 0.1, 0, 900);
+    noise(0.14, 0.2, 1100);
+    tone(330, 0.3, 0.06, 0, 660);
     [523, 659, 784, 1047].forEach((freq, i) => {
-      const dur = i === 3 ? 0.75 : 0.16;
+      const dur = i === 3 ? 0.9 : 0.22;
       const at = 0.18 + i * 0.11;
-      tone(freq, dur, "triangle", 0.16, at);
-      tone(freq * 2, dur, "sine", 0.06, at);
+      tone(freq, dur, 0.13, at, undefined, "triangle");
+      tone(freq * 2, dur, 0.03, at);
     });
     for (let k = 0; k < 6; k++) {
-      tone(1800 + Math.random() * 1800, 0.12, "sine", 0.04, 0.5 + k * 0.07);
+      tone(1200 + Math.random() * 1000, 0.18, 0.025, 0.5 + k * 0.07);
     }
   },
   tick(i = 0) {
     const now = Date.now();
     if (now - lastTick < 40) return;
     lastTick = now;
-    tone(700 + i * 120, 0.05, "square", 0.05);
+    tone(TICK_BASE * PENTATONIC[i % 5] * 2 ** Math.floor(i / 5), 0.09, 0.09);
   },
   clack() {
-    noise(0.04, 0.35, 2600, "highpass");
-    tone(180, 0.05, "square", 0.06);
+    noise(0.05, 0.2, 900);
+    tone(196, 0.07, 0.14, 0, 147, "triangle");
   },
   stamp() {
-    noise(0.14, 0.7, 260, "lowpass");
-    tone(110, 0.28, "sine", 0.7, 0, 38);
+    noise(0.16, 0.22, 420);
+    tone(150, 0.3, 0.38, 0, 55, "triangle");
   },
   rustle() {
-    noise(0.28, 0.22, 3200, "bandpass");
-    noise(0.18, 0.16, 5200, "bandpass", 0.12);
+    noise(0.26, 0.2, 1300, "bandpass", 0, 0.05);
+    noise(0.2, 0.14, 2100, "bandpass", 0.1, 0.05);
   },
   boing() {
-    tone(280, 0.22, "sine", 0.18, 0, 760);
+    tone(260, 0.24, 0.12, 0, 520);
   },
   ding() {
-    tone(523, 0.3, "triangle", 0.18);
-    tone(659, 0.4, "triangle", 0.18, 0.12);
+    tone(523, 0.45, 0.12);
+    tone(659, 0.6, 0.12, 0.12);
   },
   knock() {
-    noise(0.07, 0.45, 700, "lowpass");
-    tone(190, 0.1, "triangle", 0.35, 0, 90);
+    noise(0.06, 0.14, 520);
+    tone(180, 0.12, 0.26, 0, 110, "triangle");
+  },
+  latch() {
+    noise(0.04, 0.14, 1400);
+    tone(392, 0.07, 0.16, 0, 294, "triangle");
+    noise(0.05, 0.12, 1000, "lowpass", 0.1);
+    tone(294, 0.1, 0.16, 0.1, 196, "triangle");
   },
   chime() {
-    tone(784, 0.7, "sine", 0.13);
-    tone(1047, 0.8, "sine", 0.11, 0.1);
-    tone(1568, 0.9, "sine", 0.07, 0.2);
+    tone(659, 0.8, 0.1);
+    tone(784, 0.9, 0.09, 0.1);
+    tone(1047, 1.1, 0.07, 0.2);
   },
 };
 
