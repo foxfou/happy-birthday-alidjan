@@ -6,6 +6,7 @@ import { Stage } from "~/components/stage";
 import { KNOW, MAX_SKILLS, REASONS, SKILLS } from "~/config";
 import { apiEnabled, sendRsvp } from "~/lib/api";
 import { burst } from "~/lib/burst";
+import { loadCase } from "~/lib/casefile";
 import { loadGuest, saveGuest } from "~/lib/guest";
 import { prefersReducedMotion } from "~/lib/motion";
 import { sfx } from "~/lib/sfx";
@@ -18,6 +19,8 @@ export function clientLoader() {
   const guest = loadGuest();
   // Место выбрано — дело закрыто, досье больше не правится.
   if (guest?.seat) throw redirect("/pass");
+  // Бланк досье заперт в папке: сначала гость вскрывает её по уликам.
+  if (!guest && !loadCase().open) throw redirect("/evidence");
   return guest;
 }
 

@@ -19,6 +19,8 @@
   --color-ok: #2f5f45;
   --color-tape: #d8c27d;
   --color-pen: #2b4a9b;
+  --color-slip: #f0e7cd;
+  --color-glow: #d6ff7e;
 
   --font-type: "PT Mono", "Courier New", ui-monospace, monospace;
   --font-head: "Oswald", "Arial Narrow", Impact, sans-serif;
@@ -369,6 +371,502 @@
     font-size: 14px;
     letter-spacing: 0.04em;
     cursor: pointer;
+  }
+
+  /* ---------- улики: папка под замком ---------- */
+  .clues {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 18px 0 16px;
+  }
+  /* Бирка улики: пока число не добыто — «??», потом оно само. */
+  .clue-tab {
+    padding: 7px 4px 5px;
+    border: 1.5px solid var(--color-line);
+    border-radius: 4px;
+    color: var(--color-muted);
+    font-size: 12px;
+    line-height: 1.2;
+    text-align: center;
+    cursor: pointer;
+    transition:
+      background 0.2s,
+      border-color 0.2s,
+      color 0.2s;
+  }
+  .clue-tab b {
+    display: block;
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 26px;
+    line-height: 1.15;
+    text-shadow: none;
+    opacity: 0.35;
+  }
+  .clue-tab[data-found] b {
+    color: var(--color-stamp);
+    opacity: 1;
+    animation: pop-in 0.4s cubic-bezier(0.2, 1.5, 0.4, 1);
+  }
+  .clue-tab[aria-pressed="true"] {
+    border-color: var(--color-ink);
+    background: var(--color-paper-2);
+    color: var(--color-ink);
+  }
+  .clue {
+    animation: stage-in 0.32s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .clue h3 {
+    margin-bottom: 4px;
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 1.15;
+  }
+  .clue-result {
+    min-height: 22px;
+    margin: 10px 0 0;
+    color: var(--color-ok);
+    font-size: 14px;
+  }
+
+  /* ---------- улика №1: лист под УФ-лампой ---------- */
+  /* --x и --y — центр пятна лампы, их двигает uv-note.tsx. */
+  .uv {
+    --x: 50%;
+    --y: 50%;
+    position: relative;
+    height: 230px;
+    border: 1.5px solid var(--color-ink);
+    border-radius: 3px;
+    background:
+      repeating-linear-gradient(transparent 0 27px, rgb(90 60 20 / 0.14) 27px 28px),
+      var(--color-slip);
+    overflow: hidden;
+    cursor: crosshair;
+    touch-action: none;
+    user-select: none;
+  }
+  .uv-memo {
+    display: block;
+    max-width: 250px;
+    padding: 14px 16px;
+    color: var(--color-muted);
+    font-size: 13px;
+  }
+  .uv-memo b {
+    display: block;
+    color: var(--color-ink);
+    font-family: var(--font-head);
+    font-weight: 500;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .uv-dark,
+  .uv-ink {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.35s;
+    pointer-events: none;
+  }
+  .uv[data-lit] :is(.uv-dark, .uv-ink) {
+    opacity: 1;
+  }
+  /* Темнота с фиолетовым пятном света. */
+  .uv-dark {
+    background: radial-gradient(
+      circle at var(--x) var(--y),
+      rgb(160 120 255 / 0.22),
+      rgb(96 56 220 / 0.45) 48px,
+      rgb(18 10 44 / 0.97) 98px
+    );
+  }
+  /* Невидимые чернила: слой виден только внутри пятна. */
+  .uv-ink {
+    color: var(--color-glow);
+    font-family: var(--font-hand);
+    font-size: 21px;
+    line-height: 1;
+    text-shadow:
+      0 0 6px rgb(190 255 90 / 0.9),
+      0 0 16px rgb(150 255 60 / 0.55);
+    -webkit-mask-image: radial-gradient(circle at var(--x) var(--y), #000 36px, transparent 88px);
+    mask-image: radial-gradient(circle at var(--x) var(--y), #000 36px, transparent 88px);
+  }
+  .uv-ink > * {
+    position: absolute;
+  }
+  .uv-cold {
+    left: 6%;
+    top: 62%;
+    transform: rotate(-7deg);
+  }
+  .uv-was {
+    right: 5%;
+    top: 7%;
+    font-size: 17px;
+    transform: rotate(5deg);
+  }
+  .uv-warm {
+    left: 24%;
+    top: 40%;
+    transform: rotate(4deg);
+  }
+  .uv-hot {
+    right: 36%;
+    bottom: 9%;
+    transform: rotate(-5deg);
+  }
+  .uv-print {
+    left: 7%;
+    bottom: 6%;
+    width: 38px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.2;
+    filter: drop-shadow(0 0 4px rgb(170 255 80 / 0.8));
+    opacity: 0.8;
+  }
+  .uv-n {
+    position: absolute;
+    right: 8%;
+    top: 36%;
+    padding: 0 16px 8px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    font-family: var(--font-hand);
+    font-weight: 400;
+    font-size: 56px;
+    line-height: 1;
+    transform: rotate(-6deg);
+  }
+  .uv-ink .uv-n {
+    box-shadow:
+      0 0 10px rgb(170 255 80 / 0.6),
+      inset 0 0 8px rgb(170 255 80 / 0.35);
+  }
+  .uv-found {
+    color: var(--color-pen);
+    text-shadow: none;
+    pointer-events: none;
+    animation: pop-in 0.45s cubic-bezier(0.2, 1.5, 0.4, 1);
+    transition: color 0.35s;
+  }
+  .uv[data-lit] .uv-found {
+    color: var(--color-glow);
+    text-shadow: 0 0 8px rgb(190 255 90 / 0.9);
+  }
+
+  /* ---------- улика №2: справка из шредера ---------- */
+  /* --n — число полос; у полосы --id — её место в целом листе, --slot — где она лежит сейчас. */
+  .strips {
+    position: relative;
+    height: 196px;
+    margin: 12px 0 8px;
+    transition: box-shadow 0.3s;
+  }
+  .strips[data-solved] {
+    box-shadow: 0 2px 6px rgb(0 0 0 / 0.3);
+  }
+  .strip {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--slot) * 100% / var(--n));
+    width: calc(100% / var(--n));
+    background: var(--color-slip);
+    box-shadow:
+      inset 1px 0 rgb(90 60 20 / 0.3),
+      inset -1px 0 rgb(90 60 20 / 0.3),
+      0 2px 5px rgb(0 0 0 / 0.28);
+    overflow: hidden;
+    text-align: left;
+    transform: translate(var(--dx, 0px), var(--drop)) rotate(var(--tilt));
+    transition:
+      left 0.26s cubic-bezier(0.3, 1.3, 0.5, 1),
+      transform 0.26s cubic-bezier(0.3, 1.3, 0.5, 1),
+      box-shadow 0.3s;
+    cursor: grab;
+    touch-action: pan-y;
+    user-select: none;
+  }
+  .strip:focus-visible {
+    z-index: 1;
+  }
+  .strip[data-drag] {
+    z-index: 2;
+    box-shadow:
+      inset 1px 0 rgb(90 60 20 / 0.3),
+      inset -1px 0 rgb(90 60 20 / 0.3),
+      0 10px 18px rgb(0 0 0 / 0.4);
+    transform: translate(var(--dx), -8px) rotate(var(--tilt)) scale(1.03);
+    transition: none;
+    cursor: grabbing;
+  }
+  .strips[data-solved] .strip {
+    box-shadow: none;
+    transform: none;
+    cursor: default;
+  }
+  /* В каждой полосе лежит целый лист, сдвинутый так, чтобы в прорезь попала её часть. */
+  .strip-page {
+    position: relative;
+    display: block;
+    width: calc(var(--n) * 100%);
+    height: 100%;
+    margin-left: calc(var(--id) * -100%);
+    padding: 14px 16px;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .strip-head {
+    display: block;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 2px solid var(--color-ink);
+    font-family: var(--font-head);
+    font-weight: 500;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .strip-page strong {
+    display: block;
+    margin-top: 6px;
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 84px;
+    line-height: 1;
+    letter-spacing: 0.45em;
+    text-align: center;
+    text-indent: 0.45em;
+    text-shadow: none;
+  }
+  .strip-sign {
+    position: absolute;
+    left: 16px;
+    bottom: 10px;
+    color: var(--color-pen);
+    font-family: var(--font-hand);
+    font-size: 20px;
+    text-shadow: none;
+  }
+  /* Росчерк через весь лист: по нему полосы сходятся, даже если не читать текст. */
+  .strip-page svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: var(--color-pen);
+    stroke-width: 2;
+    opacity: 0.55;
+  }
+  .strip-page path {
+    vector-effect: non-scaling-stroke;
+  }
+  .strip-page .stamp {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    padding: 2px 10px;
+    border-width: 3px;
+    font-size: 18px;
+  }
+
+  /* ---------- улика №3: шифровальный диск ---------- */
+  .cipher {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border: 1.5px dashed var(--color-ink);
+    border-radius: 4px;
+    font-size: 14px;
+    letter-spacing: 0.06em;
+    transition:
+      background 0.3s,
+      border-color 0.3s,
+      color 0.3s;
+  }
+  .cipher[data-solved] {
+    border-style: solid;
+    border-color: var(--color-ok);
+    background: var(--color-paper-2);
+    color: var(--color-ok);
+  }
+  .disk-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .disk {
+    flex: 0 1 236px;
+    min-width: 0;
+    border-radius: 50%;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+  .disk[data-drag] {
+    cursor: grabbing;
+  }
+  .disk[data-solved] {
+    cursor: default;
+  }
+  .disk circle {
+    fill: var(--color-paper);
+    stroke: var(--color-ink);
+    stroke-width: 2;
+  }
+  .disk .disk-outer {
+    fill: var(--color-paper-2);
+  }
+  .disk .disk-hub {
+    fill: var(--color-ink);
+  }
+  .disk text {
+    fill: var(--color-ink);
+    font-size: 11px;
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+  .disk-inner {
+    transform-origin: 120px 120px;
+    transition: transform 0.22s cubic-bezier(0.3, 1.3, 0.5, 1);
+  }
+  .disk[data-drag] .disk-inner {
+    transition: none;
+  }
+  .disk .disk-cap {
+    fill: var(--color-paper-2);
+    font-family: var(--font-head);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .disk .disk-num {
+    fill: var(--color-paper);
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 40px;
+  }
+  .disk[data-solved] .disk-num {
+    fill: var(--color-glow);
+  }
+  .disk-step {
+    flex: none;
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--color-ink);
+    border-radius: 50%;
+    font-family: var(--font-head);
+    font-size: 22px;
+    line-height: 1;
+    text-shadow: none;
+    cursor: pointer;
+  }
+  .disk-step:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  /* ---------- кодовый замок ---------- */
+  .lock {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: fit-content;
+    margin: 12px 0 18px;
+    padding: 14px 18px;
+    border-radius: 6px;
+    background: var(--color-ink);
+    box-shadow:
+      inset 0 0 0 2px rgb(255 255 255 / 0.1),
+      0 6px 14px rgb(0 0 0 / 0.3);
+    text-shadow: none;
+  }
+  /* Защёлки по бокам: расходятся, когда код верен. */
+  .lock::before,
+  .lock::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 9px;
+    height: 30px;
+    margin-top: -15px;
+    border-radius: 2px;
+    background: linear-gradient(to right, #c9ccce, #7d8183 55%, #b4b7b9);
+    box-shadow: 0 2px 2px rgb(0 0 0 / 0.35);
+    transition: transform 0.3s cubic-bezier(0.2, 1.5, 0.4, 1);
+  }
+  .lock::before {
+    left: -4px;
+  }
+  .lock::after {
+    right: -4px;
+  }
+  .lock[data-open]::before {
+    transform: translateX(-8px) rotate(-16deg);
+  }
+  .lock[data-open]::after {
+    transform: translateX(8px) rotate(16deg);
+  }
+  .lock-sep {
+    padding: 0 3px;
+    color: var(--color-paper-2);
+    font-family: var(--font-head);
+    font-size: 26px;
+    opacity: 0.6;
+  }
+  .wheel {
+    position: relative;
+    width: 34px;
+    height: 58px;
+    border-radius: 4px;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-head);
+    font-weight: 700;
+    font-size: 28px;
+    overflow: hidden;
+    cursor: ns-resize;
+    touch-action: none;
+    user-select: none;
+    transition:
+      background 0.3s,
+      color 0.3s;
+  }
+  .wheel > span {
+    position: absolute;
+    inset: 50% 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--cell);
+    margin-top: calc(var(--cell) / -2);
+    line-height: 1;
+    transition: transform 0.16s ease-out;
+  }
+  .wheel[data-drag] > span {
+    transition: none;
+  }
+  /* Тени сверху и снизу скругляют колесо в барабан. */
+  .wheel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(rgb(0 0 0 / 0.6), transparent 34%, transparent 66%, rgb(0 0 0 / 0.6));
+    pointer-events: none;
+  }
+  .lock[data-open] .wheel {
+    background: #dfeeda;
+    color: var(--color-ok);
+    cursor: default;
   }
 
   /* ---------- досье ---------- */
@@ -897,14 +1395,22 @@
     .stage-enter .pass-stamp,
     .stamp.hero,
     .stamp.pop,
-    .log p {
+    .log p,
+    .clue,
+    .clue-tab[data-found] b,
+    .uv-found {
       animation: none;
     }
     .bar > i {
       animation-duration: 0s;
     }
     .btn.dodgy,
-    .seat {
+    .seat,
+    .strip,
+    .disk-inner,
+    .wheel > span,
+    .lock::before,
+    .lock::after {
       transition: none;
     }
   }
@@ -918,6 +1424,12 @@
   to {
     opacity: 1;
     transform: scale(1) rotate(-8deg);
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    scale: 2.2;
   }
 }
 @keyframes stage-in {
