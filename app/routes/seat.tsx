@@ -5,14 +5,14 @@ import type { Route } from "./+types/seat";
 import { Stage } from "~/components/stage";
 import { EVENT, SEATS } from "~/config";
 import { apiEnabled, fetchTakenSeats, sendRsvp } from "~/lib/api";
-import { requirePendingGuest, saveGuest } from "~/lib/guest";
+import { requireGuestWithPhoto, saveGuest } from "~/lib/guest";
 import { sfx } from "~/lib/sfx";
 
 // Схема стола не должна надолго зависать, если сервер у гостя не открывается.
 const LOADER_TIMEOUT_MS = 4000;
 
 export async function clientLoader({ request }: Route.ClientLoaderArgs) {
-  requirePendingGuest();
+  requireGuestWithPhoto();
   let taken = EVENT.takenSeats;
   if (apiEnabled) {
     try {
@@ -33,7 +33,7 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
     return { error: "Такого места за столом нет." };
   }
 
-  const guest = { ...requirePendingGuest(), seat };
+  const guest = { ...requireGuestWithPhoto(), seat };
   if (apiEnabled) {
     try {
       if (!(await sendRsvp(guest)).accepted) {

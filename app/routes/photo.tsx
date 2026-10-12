@@ -17,7 +17,7 @@ import { sfx } from "~/lib/sfx";
 import { syncPhoto } from "~/lib/sync";
 
 /* Шаг после досье: гость прикладывает фото 3×4 для пропуска. Снимок можно перетащить
-   или выбрать с устройства, затем подогнать под рамку. Шаг необязательный. */
+   или выбрать с устройства, затем подогнать под рамку. Без фото дальше не пускаем. */
 
 export function clientLoader() {
   return { guest: requirePendingGuest(), photo: loadPhoto() };
@@ -69,7 +69,9 @@ export default function Photo({ loaderData }: Route.ComponentProps) {
     setBusy(true);
     try {
       if (!savePhoto(await cropToJpeg(source, area))) {
-        setError("Браузер не дал сохранить фото. Можно продолжить без него.");
+        setError(
+          "Браузер не дал сохранить фото. Попробуйте другой снимок или другой браузер.",
+        );
         return;
       }
       updateGuest(guest.id, { photoSent: false });
@@ -174,7 +176,8 @@ export default function Photo({ loaderData }: Route.ComponentProps) {
       ) : (
         <>
           <p className="muted">
-            К досье прилагается фото 3×4 — оно пойдёт на ваш пропуск.
+            К досье прилагается фото 3×4 — оно пойдёт на ваш пропуск. Без фото
+            допуск не оформляется.
           </p>
           <label
             className="dropzone"
@@ -204,11 +207,6 @@ export default function Photo({ loaderData }: Route.ComponentProps) {
       <div className="err mt-2" role="alert">
         {error}
       </div>
-      {!saved && (
-        <Link className="link-reset" to="/check">
-          Продолжить без фото
-        </Link>
-      )}
     </Stage>
   );
 }

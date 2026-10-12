@@ -1,6 +1,6 @@
 import { redirect } from "react-router";
 
-import { clearPhoto } from "./photo";
+import { clearPhoto, loadPhoto } from "./photo";
 
 export type Guest = {
   /** Случайный идентификатор анкеты: по нему сервер отличает гостей друг от друга. */
@@ -65,6 +65,13 @@ export function requirePendingGuest(): Guest {
   const guest = loadGuest();
   if (!guest?.name) throw redirect("/dossier");
   if (guest.seat) throw redirect("/pass");
+  return guest;
+}
+
+/** Шаги после фото: пока оно не приложено, проверка досье не начинается. */
+export function requireGuestWithPhoto(): Guest {
+  const guest = requirePendingGuest();
+  if (!loadPhoto()) throw redirect("/photo");
   return guest;
 }
 
