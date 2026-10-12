@@ -193,8 +193,10 @@ export default function Dossier({
           </div>
         </fieldset>
 
-        <fieldset className="field mb-0">
-          <legend className="lab">Решение гостя</legend>
+        {/* Итог страницы: всё выше — анкета, здесь гость выносит решение. */}
+        <fieldset className="resolution">
+          <legend>Решение гостя</legend>
+          <p className="muted">Досье заполнено. Осталось вынести решение.</p>
           <div className="decision">
             <button ref={yes} className="btn yes" type="submit">
               Приду
