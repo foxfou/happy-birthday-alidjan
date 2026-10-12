@@ -34,3 +34,10 @@ export function saveCase(file: CaseFile) {
     localStorage.setItem(KEY, JSON.stringify(file));
   } catch {}
 }
+
+/** Папка снова опечатана: улики придётся разгадать заново. */
+export function clearCase() {
+  try {
+    localStorage.removeItem(KEY);
+  } catch {}
+}

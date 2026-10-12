@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useRevalidator } from "react-router";
+import { Link, useNavigate, useRevalidator } from "react-router";
 
 import type { Route } from "./+types/pass";
 import { Stage } from "~/components/stage";
@@ -21,6 +21,7 @@ export default function Pass({ loaderData }: Route.ComponentProps) {
   const { guest, photo } = loaderData;
   const navigate = useNavigate();
   const { revalidate } = useRevalidator();
+  const [revoked, setRevoked] = useState(false);
 
   // Пропуск показываем сразу, а с сервером сверяемся в фоне.
   useEffect(() => {
@@ -29,7 +30,7 @@ export default function Pass({ loaderData }: Route.ComponentProps) {
     syncGuest(guest).then(
       (result) => {
         if (stale) return;
-        if (result.state === "removed") navigate("/", { replace: true });
+        if (result.state === "removed") setRevoked(true);
         if (result.state === "lost") {
           navigate(`/seat?lost=${result.seat}`, { replace: true });
         }
@@ -43,6 +44,21 @@ export default function Pass({ loaderData }: Route.ComponentProps) {
       stale = true;
     };
   }, [guest, navigate, revalidate]);
+
+  // Пропуск успел мелькнуть, а анкеты на сервере уже нет: объясняем, куда он делся.
+  if (revoked) {
+    return (
+      <Stage key="revoked" title="Допуск аннулирован">
+        <p className="muted">
+          Ваше досье изъято из дела по решению именинника: пропуск и место
+          больше не действуют. Чтобы вернуть допуск, оформите его заново.
+        </p>
+        <Link className="btn" to="/dossier" onClick={() => sfx.rustle()}>
+          Оформить допуск заново
+        </Link>
+      </Stage>
+    );
+  }
 
   const weekday = EVENT.weekday[0].toUpperCase() + EVENT.weekday.slice(1);
 

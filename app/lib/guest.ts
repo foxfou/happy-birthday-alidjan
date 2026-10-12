@@ -1,5 +1,6 @@
 import { redirect } from "react-router";
 
+import { clearCase } from "./casefile";
 import { clearPhoto, loadPhoto } from "./photo";
 
 export type Guest = {
@@ -48,11 +49,16 @@ export function updateGuest(id: string, patch: Partial<Guest>) {
   if (guest?.id === id) saveGuest({ ...guest, ...patch });
 }
 
+/**
+ * Стирает с устройства всё дело гостя — анкету, фото и вскрытый замок: после
+ * удаления анкеты приглашение начинается с опечатанной папки.
+ */
 export function clearGuest() {
   try {
     localStorage.removeItem(KEY);
   } catch {}
   clearPhoto();
+  clearCase();
 }
 
 export type SeatedGuest = Guest & { seat: number };

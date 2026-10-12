@@ -11,6 +11,7 @@ import {
   removeGuest,
   type GuestRecord,
 } from "~/lib/api";
+import { clearGuest, loadGuest } from "~/lib/guest";
 import { PHOTO } from "~/lib/photo";
 import type { PrintGuest, PrintKind } from "~/lib/print";
 
@@ -32,8 +33,12 @@ export async function clientLoader({ params }: Route.ClientLoaderArgs) {
 
 export async function clientAction({ params, request }: Route.ClientActionArgs) {
   const form = await request.formData();
+  const id = String(form.get("id"));
   try {
-    await removeGuest(params.key, String(form.get("id")));
+    await removeGuest(params.key, id);
+    // Именинник удалил собственную анкету: с этого устройства она исчезает сразу,
+    // не дожидаясь, пока пропуск сверится с сервером.
+    if (loadGuest()?.id === id) clearGuest();
     return null;
   } catch {
     return { error: "Не получилось удалить. Проверьте связь и попробуйте ещё раз." };
