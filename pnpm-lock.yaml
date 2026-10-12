@@ -8,6 +8,15 @@ importers:
 
   .:
     dependencies:
+      '@expo-google-fonts/marck-script':
+        specifier: ^0.4.1
+        version: 0.4.1
+      '@expo-google-fonts/oswald':
+        specifier: ^0.4.2
+        version: 0.4.2
+      '@expo-google-fonts/pt-mono':
+        specifier: ^0.4.1
+        version: 0.4.1
       '@fontsource/marck-script':
         specifier: ^5.3.0
         version: 5.3.0
@@ -17,12 +26,18 @@ importers:
       '@fontsource/pt-mono':
         specifier: ^5.3.0
         version: 5.3.0
+      '@pdf-lib/fontkit':
+        specifier: ^1.1.1
+        version: 1.1.1
       '@react-router/node':
         specifier: ^7.18.4
         version: 7.18.4(react-router@7.18.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(typescript@5.9.3)
       isbot:
         specifier: ^5.1.36
         version: 5.2.2
+      pdf-lib:
+        specifier: ^1.17.1
+        version: 1.17.1
       react:
         specifier: ^19.2.8
         version: 19.3.0
@@ -348,6 +363,15 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@expo-google-fonts/marck-script@0.4.1':
+    resolution: {integrity: sha512-XviOmsArWFWb4gjTH12r80hGcQEK++KKH2hSW/j4YvvfRavpce+jZA0Q9m0E2XBsWpDH5gwKDjfDOk5xbJXEfQ==}
+
+  '@expo-google-fonts/oswald@0.4.2':
+    resolution: {integrity: sha512-ZLB8ou0SmSWThyLDCHQdFnbMrj93hRrpkKMLLoPrIs4QTrPxZyOxHoJ4mFoFCs0efZdV1Yd8mULfaggAblX5Mg==}
+
+  '@expo-google-fonts/pt-mono@0.4.1':
+    resolution: {integrity: sha512-f9YMfoZAVovNtt30vOJ1Awpv6Tzzowm8hxqia506pyJi6w2mPKswz0yTB1jzeS7GCoRZnLcagUcu+uuxzYUVyA==}
+
   '@fontsource/marck-script@5.3.0':
     resolution: {integrity: sha512-PLm3zCeXB7osgon3TC0bjBFPua3d5syocLWFpK5eZZGoaSsOw6bpHLdMoGB8PkAErf4RiRUEiszs+Y7JhDnB/w==}
 
@@ -385,6 +409,15 @@ packages:
 
   '@oxc-project/types@0.153.0':
     resolution: {integrity: sha512-jSNrRIyvPVLL5E1z/tS5zLAprosGz/FuI1PWwEOz59j3E4TTTzSpqKb/RDGqJhhW0QHYISGXxq582wGx6T11Tw==}
+
+  '@pdf-lib/fontkit@1.1.1':
+    resolution: {integrity: sha512-KjMd7grNapIWS/Dm0gvfHEilSyAmeLvrEGVcqLGi0VYebuqqzTbgF29efCx7tvx+IEbG3zQciRSWl3GkUSvjZg==}
+
+  '@pdf-lib/standard-fonts@1.0.0':
+    resolution: {integrity: sha512-hU30BK9IUN/su0Mn9VdlVKsWBS6GyhVfqjwl1FjZN4TxP6cCw0jP2w7V3Hf5uX7M0AZJ16vey9yE0ny7Sa59ZA==}
+
+  '@pdf-lib/upng@1.0.1':
+    resolution: {integrity: sha512-dQK2FUMQtowVP00mtIksrlZhdFXQZPC+taih1q4CvPZ5vqdxR/LKBaFg0oAfzd1GlHZXXSPdQfzQnt+ViGvEIQ==}
 
   '@react-router/dev@7.18.4':
     resolution: {integrity: sha512-4sxQa18Znjz1zw1MGK7f97zXjK4NVcNgESvWPPEYScRFAHJWq6Q3/oejDPfYjKWLygsX1yF9jboxbGLw+V9f+g==}
@@ -1073,11 +1106,17 @@ packages:
     resolution: {integrity: sha512-HaSJ9hNZOxTUSATfB48Qi7U2+GF1eECjI39nkeLmCWQrSOYr1z4NepR0rpWiZO77pYwUWU2cJ5NIgsmoFCsYDQ==}
     engines: {node: '>=18'}
 
+  pako@1.0.11:
+    resolution: {integrity: sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==}
+
   pathe@1.1.2:
     resolution: {integrity: sha512-whLdWMYL2TwI08hn8/ZqAbrVemu0LNaNNJZX73O6qaIdCTfXutsLhMkjdENX0qhsQ9uIimo4/aQOmXkoon2nDQ==}
 
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
+
+  pdf-lib@1.17.1:
+    resolution: {integrity: sha512-V/mpyJAoTsN4cnP31vc0wfNA1+p20evqqnap0KLoRUN0Yk/p3wN52DOEsL4oBFcLdb76hlpKPtzJIgo67j/XLw==}
 
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
@@ -1170,6 +1209,9 @@ packages:
   tinyglobby@0.2.17:
     resolution: {integrity: sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g==}
     engines: {node: '>=12.0.0'}
+
+  tslib@1.14.1:
+    resolution: {integrity: sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==}
 
   typescript@5.9.3:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
@@ -1550,6 +1592,12 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
+  '@expo-google-fonts/marck-script@0.4.1': {}
+
+  '@expo-google-fonts/oswald@0.4.2': {}
+
+  '@expo-google-fonts/pt-mono@0.4.1': {}
+
   '@fontsource/marck-script@5.3.0': {}
 
   '@fontsource/oswald@5.3.0': {}
@@ -1581,6 +1629,18 @@ snapshots:
     optional: true
 
   '@oxc-project/types@0.153.0': {}
+
+  '@pdf-lib/fontkit@1.1.1':
+    dependencies:
+      pako: 1.0.11
+
+  '@pdf-lib/standard-fonts@1.0.0':
+    dependencies:
+      pako: 1.0.11
+
+  '@pdf-lib/upng@1.0.1':
+    dependencies:
+      pako: 1.0.11
 
   '@react-router/dev@7.18.4(@types/node@22.20.5)(jiti@2.7.0)(lightningcss@1.33.0)(react-router@7.18.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(typescript@5.9.3)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0))':
     dependencies:
@@ -2072,9 +2132,18 @@ snapshots:
 
   p-map@7.1.0: {}
 
+  pako@1.0.11: {}
+
   pathe@1.1.2: {}
 
   pathe@2.0.3: {}
+
+  pdf-lib@1.17.1:
+    dependencies:
+      '@pdf-lib/standard-fonts': 1.0.0
+      '@pdf-lib/upng': 1.0.1
+      pako: 1.0.11
+      tslib: 1.14.1
 
   picocolors@1.1.1: {}
 
@@ -2190,6 +2259,8 @@ snapshots:
     dependencies:
       fdir: 6.5.0(picomatch@4.0.7)
       picomatch: 4.0.7
+
+  tslib@1.14.1: {}
 
   typescript@5.9.3: {}
 

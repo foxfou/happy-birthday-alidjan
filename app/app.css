@@ -1355,6 +1355,22 @@
   .guest .facts {
     clear: both;
   }
+  .guest-actions {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 16px;
+  }
+  /* Удаление держим в стороне от ссылок на печать, чтобы по нему не промахнуться. */
+  .guest-actions form {
+    margin-left: auto;
+  }
+  .guest-actions :disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .print-all {
+    margin: 0 0 8px;
+  }
 
   /* ---------- салют ---------- */
   .fx {
