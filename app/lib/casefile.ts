@@ -19,7 +19,9 @@ export type CaseFile = {
   open: boolean;
 };
 
-const KEY = "ali-bd-2610-case";
+// «-2»: раньше удаление анкеты не сбрасывало замок, и на устройствах остались
+// отметки «вскрыто» без анкеты. Под новым ключом они больше не действуют.
+const KEY = "ali-bd-2610-case-2";
 
 export function loadCase(): CaseFile {
   try {
