@@ -118,8 +118,9 @@ function Wheel({
         if (!held) return;
         let next = (held.y - event.clientY) / CELL;
         if (Math.abs(next) > 0.15) held.moved = true;
-        if (Math.abs(next) >= 0.5) {
-          const by = Math.sign(next);
+        // Резкий рывок приходит одним событием сразу на несколько цифр.
+        const by = Math.round(next);
+        if (by) {
           step(by);
           held.y -= by * CELL;
           next -= by;
