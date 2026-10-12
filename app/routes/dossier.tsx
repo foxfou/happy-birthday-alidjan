@@ -14,6 +14,16 @@ import { sfx } from "~/lib/sfx";
 const NAME_ERROR =
   "Впишите имя или позывной, иначе комиссия не сможет вас найти.";
 const MAX_DODGES = 5;
+/** Отметка «свой вариант» в состоянии формы; сам текст хранится рядом. */
+const OWN = "own";
+// Сервер (backend/rsvp.js) принимает причину до 80 знаков и навык до 40.
+const MAX_REASON_LENGTH = 60;
+const MAX_SKILL_LENGTH = 40;
+
+/** Вписанный от руки ответ — тот, которого нет среди готовых. */
+function ownAnswer(options: string[], answers: string[]) {
+  return answers.find((answer) => !options.includes(answer)) ?? "";
+}
 
 export function clientLoader() {
   const guest = loadGuest();
@@ -30,18 +40,21 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
   if (!name) return { error: NAME_ERROR };
 
   const know = Number(form.get("know"));
-  const reason = String(form.get("reason"));
+  // «Свой вариант» приходит вписанным текстом; пустой за ответ не считается.
+  const reason = String(form.get("reason") ?? "")
+    .trim()
+    .slice(0, MAX_REASON_LENGTH);
+  const skills = form
+    .getAll("skill")
+    .map((skill) => String(skill).trim().slice(0, MAX_SKILL_LENGTH))
+    .filter(Boolean);
   const previous = loadGuest();
   const guest = {
     id: previous?.id ?? crypto.randomUUID(),
     name,
     know: KNOW[know] ? know : 2,
-    reason: REASONS.includes(reason) ? reason : REASONS[0],
-    skills: form
-      .getAll("skill")
-      .map(String)
-      .filter((skill) => SKILLS.includes(skill))
-      .slice(0, MAX_SKILLS),
+    reason: reason || REASONS[0],
+    skills: [...new Set(skills)].slice(0, MAX_SKILLS),
     seat: null,
     sent: false,
     photoSent: previous?.photoSent,
@@ -62,7 +75,18 @@ export default function Dossier({
   const yes = useRef<HTMLButtonElement>(null);
   const partyTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [know, setKnow] = useState(guest?.know ?? 2);
-  const [skills, setSkills] = useState(guest?.skills ?? []);
+  const [ownReason, setOwnReason] = useState(
+    ownAnswer(REASONS, guest ? [guest.reason] : []),
+  );
+  const [ownSkill, setOwnSkill] = useState(
+    ownAnswer(SKILLS, guest?.skills ?? []),
+  );
+  const [reason, setReason] = useState(
+    ownReason ? OWN : (guest?.reason ?? REASONS[0]),
+  );
+  const [skills, setSkills] = useState(
+    (guest?.skills ?? []).map((skill) => (skill === ownSkill ? OWN : skill)),
+  );
   const [nameMissing, setNameMissing] = useState(false);
   const error = nameMissing ? NAME_ERROR : actionData?.error;
 
@@ -88,6 +112,11 @@ export default function Dossier({
       },
       reduce ? 500 : 1500,
     );
+  }
+
+  function pickReason(value: string) {
+    setReason(value);
+    sfx.tick(1);
   }
 
   function toggleSkill(skill: string, checked: boolean) {
@@ -156,18 +185,27 @@ export default function Dossier({
         <fieldset className="field">
           <legend className="lab">Главная причина прийти</legend>
           <div className="opts">
-            {REASONS.map((reason, i) => (
-              <label className="opt" key={reason}>
+            {REASONS.map((option) => (
+              <label className="opt" key={option}>
                 <input
                   type="radio"
                   name="reason"
-                  value={reason}
-                  defaultChecked={guest ? guest.reason === reason : i === 0}
-                  onChange={() => sfx.tick(1)}
+                  value={option}
+                  checked={reason === option}
+                  onChange={() => pickReason(option)}
                 />
-                <span>{reason}</span>
+                <span>{option}</span>
               </label>
             ))}
+            <OwnOption
+              type="radio"
+              name="reason"
+              maxLength={MAX_REASON_LENGTH}
+              text={ownReason}
+              checked={reason === OWN}
+              onText={setOwnReason}
+              onToggle={() => pickReason(OWN)}
+            />
           </div>
         </fieldset>
 
@@ -194,6 +232,16 @@ export default function Dossier({
                 </label>
               );
             })}
+            <OwnOption
+              type="checkbox"
+              name="skill"
+              maxLength={MAX_SKILL_LENGTH}
+              text={ownSkill}
+              checked={skills.includes(OWN)}
+              disabled={!skills.includes(OWN) && skills.length >= MAX_SKILLS}
+              onText={setOwnSkill}
+              onToggle={(checked) => toggleSkill(OWN, checked)}
+            />
           </div>
         </fieldset>
 
@@ -213,6 +261,74 @@ export default function Dossier({
         </fieldset>
       </Form>
     </Stage>
+  );
+}
+
+/**
+ * Строка «свой вариант»: отметка и поле для текста. Вписанный текст служит
+ * значением отметки и уходит в форму наравне с готовыми вариантами.
+ */
+function OwnOption({
+  type,
+  name,
+  maxLength,
+  text,
+  checked,
+  disabled,
+  onText,
+  onToggle,
+}: {
+  type: "radio" | "checkbox";
+  name: string;
+  maxLength: number;
+  text: string;
+  checked: boolean;
+  disabled?: boolean;
+  onText: (text: string) => void;
+  onToggle: (checked: boolean) => void;
+}) {
+  const field = useRef<HTMLInputElement>(null);
+
+  return (
+    <div className="opt own">
+      <input
+        type={type}
+        name={name}
+        value={text.trim()}
+        checked={checked}
+        disabled={disabled}
+        aria-label="Свой вариант"
+        onChange={(event) => {
+          onToggle(event.target.checked);
+          if (event.target.checked) field.current!.focus();
+        }}
+      />
+      <span>
+        <input
+          ref={field}
+          type="text"
+          value={text}
+          maxLength={maxLength}
+          disabled={disabled}
+          placeholder="Свой вариант"
+          aria-label="Свой вариант: текст"
+          enterKeyHint="done"
+          // С клавиатуры в поле попадают через отметку: иначе Tab мимо него
+          // менял бы ответ.
+          tabIndex={checked ? 0 : -1}
+          onFocus={() => {
+            if (!checked) onToggle(true);
+          }}
+          onChange={(event) => onText(event.target.value)}
+          onKeyDown={(event) => {
+            // Enter здесь значит «дописал», а не «Приду».
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            event.currentTarget.blur();
+          }}
+        />
+      </span>
+    </div>
   );
 }
 

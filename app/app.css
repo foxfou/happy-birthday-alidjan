@@ -894,7 +894,7 @@
   .opt {
     position: relative;
   }
-  .opt input {
+  .opt > input {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -946,11 +946,28 @@
     outline: 3px solid var(--color-stamp);
     outline-offset: 2px;
   }
-  .opt input:disabled {
+  .opt > input:disabled {
     cursor: not-allowed;
   }
   .opt input:disabled + span {
     opacity: 0.45;
+  }
+  /* «Свой вариант»: нажатия мимо поля проходят сквозь рамку к отметке. */
+  .own span {
+    pointer-events: none;
+  }
+  .own span:focus-within {
+    outline: 3px solid var(--color-stamp);
+    outline-offset: 2px;
+  }
+  .own span input {
+    padding: 0;
+    border-bottom: 1.5px dashed var(--color-line);
+    /* мельче 16px — и iOS приближает страницу при вводе */
+    font-size: 16px;
+    line-height: 1.35;
+    outline: none;
+    pointer-events: auto;
   }
   /* Итоговый блок досье: отделён жирной чертой и озаглавлен как раздел. */
   .resolution {
