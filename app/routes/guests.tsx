@@ -3,7 +3,8 @@ import { data, useFetcher, useRevalidator } from "react-router";
 import type { Route } from "./+types/guests";
 import { Stage } from "~/components/stage";
 import { EVENT, KNOW, SEATS } from "~/config";
-import { apiEnabled, listGuests, removeGuest } from "~/lib/api";
+import { apiEnabled, listGuests, photoUrl, removeGuest } from "~/lib/api";
+import { PHOTO } from "~/lib/photo";
 
 /* Страница именинника: кто заполнил анкету и какие места заняты. Ссылок на неё
    с сайта нет: она открывается только по адресу с ключом, который знает сервер.
@@ -80,6 +81,18 @@ export default function Guests({ loaderData }: Route.ComponentProps) {
       <ul className="guests">
         {guests.map((guest) => (
           <li key={guest.id} className="guest">
+            {guest.photo && (
+              <a href={photoUrl(guest.id)} target="_blank" rel="noopener">
+                <img
+                  className="photo-frame"
+                  src={photoUrl(guest.id)}
+                  alt={`Фото: ${guest.name}`}
+                  width={PHOTO.width}
+                  height={PHOTO.height}
+                  loading="lazy"
+                />
+              </a>
+            )}
             <h3>{guest.name}</h3>
             <p className="guest-seat">
               {guest.seat ? `Место №${guest.seat}` : "Место не выбрано"}

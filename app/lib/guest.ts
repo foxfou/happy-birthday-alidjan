@@ -1,5 +1,7 @@
 import { redirect } from "react-router";
 
+import { clearPhoto } from "./photo";
+
 export type Guest = {
   /** Случайный идентификатор анкеты: по нему сервер отличает гостей друг от друга. */
   id: string;
@@ -10,6 +12,8 @@ export type Guest = {
   seat: number | null;
   /** Сервер знает о текущем месте гостя. */
   sent: boolean;
+  /** Фото с устройства (см. photo.ts) уже загружено на сервер. */
+  photoSent?: boolean;
 };
 
 const KEY = "ali-bd-2610";
@@ -35,10 +39,20 @@ export function saveGuest(guest: Guest) {
   } catch {}
 }
 
+/**
+ * Меняет отдельные поля сохранённой анкеты. Фоновые операции пользуются этим,
+ * чтобы не затереть то, что гость успел изменить, пока они шли.
+ */
+export function updateGuest(id: string, patch: Partial<Guest>) {
+  const guest = loadGuest();
+  if (guest?.id === id) saveGuest({ ...guest, ...patch });
+}
+
 export function clearGuest() {
   try {
     localStorage.removeItem(KEY);
   } catch {}
+  clearPhoto();
 }
 
 export type SeatedGuest = Guest & { seat: number };

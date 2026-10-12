@@ -6,17 +6,19 @@ import { Stage } from "~/components/stage";
 import { EVENT, STATUS } from "~/config";
 import { apiEnabled } from "~/lib/api";
 import { requireSeatedGuest, type SeatedGuest } from "~/lib/guest";
+import { loadPhoto, PHOTO } from "~/lib/photo";
 import { sfx } from "~/lib/sfx";
-import { syncGuest } from "~/lib/sync";
+import { syncGuest, syncPhoto } from "~/lib/sync";
 
 /* Последний экран дела: место выбрано, заполнять больше нечего. Здесь гость видит
    свой пропуск со всеми деталями встречи — сюда же он попадает, вернувшись на сайт. */
 
 export function clientLoader() {
-  return requireSeatedGuest();
+  return { guest: requireSeatedGuest(), photo: loadPhoto() };
 }
 
-export default function Pass({ loaderData: guest }: Route.ComponentProps) {
+export default function Pass({ loaderData }: Route.ComponentProps) {
+  const { guest, photo } = loaderData;
   const navigate = useNavigate();
   const { revalidate } = useRevalidator();
 
@@ -32,6 +34,8 @@ export default function Pass({ loaderData: guest }: Route.ComponentProps) {
           navigate(`/seat?lost=${result.seat}`, { replace: true });
         }
         if (result.state === "updated") void revalidate();
+        // Анкета на сервере есть — можно дослать фото, если оно ещё не дошло.
+        if (result.state === "same") void syncPhoto().catch(() => {});
       },
       () => {}, // сервер недоступен — пропуск остаётся как есть
     );
@@ -52,7 +56,16 @@ export default function Pass({ loaderData: guest }: Route.ComponentProps) {
       <article className="pass">
         <header className="pass-head">Пропуск · Дело № {EVENT.caseNo}</header>
         <div className="pass-body">
-          <div className="pass-who">
+          <div className="pass-who" data-photo={photo ? "" : undefined}>
+            {photo && (
+              <img
+                className="photo-frame"
+                src={photo}
+                alt={`Фото: ${guest.name}`}
+                width={PHOTO.width}
+                height={PHOTO.height}
+              />
+            )}
             <div>
               <span className="pass-label">Гость</span>
               <strong className="pass-name">{guest.name}</strong>

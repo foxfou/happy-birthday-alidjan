@@ -41,12 +41,13 @@ export async function clientAction({ request }: Route.ClientActionArgs) {
       .slice(0, MAX_SKILLS),
     seat: null,
     sent: false,
+    photoSent: previous?.photoSent,
   };
   saveGuest(guest);
   // Анкета попадает в список именинника сразу, не дожидаясь выбора места. Ответа
   // не ждём: если сервер недоступен, данные дойдут вместе с местом или сообщением от гостя.
   if (apiEnabled) void sendRsvp(guest).catch(() => {});
-  return redirect("/check");
+  return redirect("/photo");
 }
 
 export default function Dossier({

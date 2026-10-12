@@ -5,7 +5,10 @@ const { createHash, timingSafeEqual } = require("node:crypto");
 
 const { parseGuest, takenSeats } = require("./rsvp");
 
-const MAX_BODY_BYTES = 4096;
+const MAX_JSON_BYTES = 4096;
+// Сайт присылает фото уже обрезанным до 600×800 — это около 100 КБ.
+const MAX_PHOTO_BYTES = 400 * 1024;
+const GUEST_ID = /^[0-9a-f-]{36}$/i;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -19,6 +22,7 @@ function respond(statusCode, data) {
   return {
     statusCode,
     headers: { ...CORS, "Content-Type": "application/json; charset=utf-8" },
+    /** @type {string | Buffer} */
     body: data === undefined ? "" : JSON.stringify(data),
   };
 }
@@ -31,16 +35,20 @@ function isAdmin(key, adminKey) {
   return timingSafeEqual(digest(key), digest(adminKey));
 }
 
-/** @param {string} [raw] */
-function parseBody(raw = "") {
-  if (Buffer.byteLength(raw) > MAX_BODY_BYTES) return null;
+/** @param {Buffer} raw */
+function parseJson(raw) {
+  if (raw.length > MAX_JSON_BYTES) return null;
   try {
-    const body = JSON.parse(raw);
+    const body = JSON.parse(raw.toString("utf8"));
     return body && typeof body === "object" ? body : null;
   } catch {
     return null;
   }
 }
+
+/** @param {Buffer} bytes */
+const isJpeg = (bytes) =>
+  bytes.length > 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
 
 /**
  * @typedef {import("./rsvp").Guest} Guest
@@ -49,6 +57,8 @@ function parseBody(raw = "") {
  * @property {(input: GuestInput) => Promise<ReturnType<typeof import("./rsvp").planRsvp>>} saveGuest
  * @property {() => Promise<Guest[]>} listGuests
  * @property {(id: string) => Promise<void>} removeGuest
+ * @property {(id: string, jpeg: Buffer) => Promise<boolean>} savePhoto false — такой анкеты нет
+ * @property {(id: string) => Promise<Buffer | null>} loadPhoto
  */
 
 /**
@@ -61,23 +71,49 @@ function createHandler({ store, adminKey }) {
    * @param {object} event
    * @param {string} [event.httpMethod]
    * @param {Record<string, string> | null} [event.queryStringParameters]
-   * @param {string} [event.body]
+   * @param {string | Buffer} [event.body]
    */
   return async function handler(event) {
     const method = event.httpMethod ?? "GET";
+    const query = event.queryStringParameters ?? {};
+    const raw = Buffer.from(event.body ?? "");
     if (method === "OPTIONS") return respond(204);
+
+    // Фото гостя: адрес с идентификатором анкеты, который знают только сам гость
+    // и именинник, поэтому отдельной проверки доступа здесь нет.
+    if ("photo" in query) {
+      if (!GUEST_ID.test(query.photo)) {
+        return respond(400, { error: "invalid", field: "photo" });
+      }
+      if (method === "GET") {
+        const jpeg = await store.loadPhoto(query.photo);
+        if (!jpeg) return respond(404, { error: "no_photo" });
+        return {
+          statusCode: 200,
+          headers: { ...CORS, "Content-Type": "image/jpeg" },
+          body: jpeg,
+        };
+      }
+      if (method !== "POST") return respond(405, { error: "method" });
+      if (raw.length > MAX_PHOTO_BYTES) return respond(413, { error: "too_large" });
+      if (!isJpeg(raw)) return respond(400, { error: "invalid", field: "body" });
+      if (!(await store.savePhoto(query.photo, raw))) {
+        return respond(404, { error: "unknown_guest" });
+      }
+      return respond(200, { ok: true });
+    }
+
     if (method === "GET") {
       const guests = await store.listGuests();
       const taken = takenSeats(guests);
       // С ?id= сайт заодно узнаёт, жива ли анкета гостя: именинник мог её удалить.
-      const id = event.queryStringParameters?.id;
-      if (!id) return respond(200, { taken });
-      const guest = guests.find((item) => item.id === id);
+      if (!query.id) return respond(200, { taken });
+      const guest = guests.find((item) => item.id === query.id);
       return respond(200, { taken, guest: guest ? { seat: guest.seat } : null });
     }
     if (method !== "POST") return respond(405, { error: "method" });
 
-    const body = parseBody(event.body);
+    const body = parseJson(raw);
     if (!body) return respond(400, { error: "invalid", field: "body" });
 
     switch (body.action) {
@@ -110,4 +146,4 @@ function createHandler({ store, adminKey }) {
   };
 }
 
-module.exports = { createHandler };
+module.exports = { createHandler, MAX_PHOTO_BYTES };

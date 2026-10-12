@@ -5,7 +5,9 @@ import type { Guest } from "./guest";
 
 export const apiEnabled = API_URL !== "";
 
-export type GuestRecord = Omit<Guest, "sent"> & {
+export type GuestRecord = Omit<Guest, "sent" | "photoSent"> & {
+  /** К анкете приложено фото. */
+  photo: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -70,6 +72,19 @@ export async function fetchGuestStatus(id: string) {
   }>({}, { query: `?id=${encodeURIComponent(id)}` });
   if (status !== 200) throw new Error(`status: HTTP ${status}`);
   return data.guest;
+}
+
+/** Адрес фото гостя на сервере — для страницы именинника. */
+export const photoUrl = (id: string) =>
+  `${API_URL}?photo=${encodeURIComponent(id)}`;
+
+/** Сервер принимает фото только к уже записанной анкете. */
+export async function uploadPhoto(id: string, jpeg: Blob) {
+  const { status } = await call(
+    { method: "POST", headers: { "Content-Type": "image/jpeg" }, body: jpeg },
+    { query: `?photo=${encodeURIComponent(id)}`, timeoutMs: 20_000 },
+  );
+  if (status !== 200) throw new Error(`photo: HTTP ${status}`);
 }
 
 export type RsvpResult =

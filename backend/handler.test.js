@@ -2,17 +2,17 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
 
-const { createFileStore, memoryBlob } = require("./file-store");
+const { createFileStore, memoryBucket } = require("./file-store");
 const { createHandler } = require("./handler");
 
 const ADMIN_KEY = "secret";
 const id = (/** @type {number} */ n) =>
   `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 
-function setup(blob = memoryBlob()) {
+function setup(bucket = memoryBucket()) {
   const handler = createHandler({
     adminKey: ADMIN_KEY,
-    store: createFileStore(blob),
+    store: createFileStore(bucket),
   });
 
   /** @param {object} body */
@@ -21,7 +21,7 @@ function setup(blob = memoryBlob()) {
       httpMethod: "POST",
       body: JSON.stringify(body),
     });
-    return { status: response.statusCode, data: JSON.parse(response.body) };
+    return { status: response.statusCode, data: JSON.parse(String(response.body)) };
   };
   const guest = (/** @type {number} */ n, /** @type {object} */ patch = {}) => ({
     id: id(n),
@@ -47,7 +47,7 @@ test("анкета без места записывается, место доб
   });
 
   const seats = await handler({ httpMethod: "GET" });
-  assert.deepEqual(JSON.parse(seats.body), { taken: [7] });
+  assert.deepEqual(JSON.parse(String(seats.body)), { taken: [7] });
   assert.equal(seats.headers["Access-Control-Allow-Origin"], "*");
 });
 
@@ -79,11 +79,12 @@ test("занятое место нельзя занять второй раз, �
 
 test("одновременные запросы на одно место: проходит ровно один", async () => {
   // Медленное хранилище: без очереди оба запроса прочитали бы пустой файл и оба записались.
-  const slow = memoryBlob();
+  const fast = memoryBucket();
   const pause = () => new Promise((resolve) => setTimeout(resolve, 15));
   const { rsvp, guest, post } = setup({
-    read: async () => (await pause(), slow.read()),
-    write: async (text) => (await pause(), slow.write(text)),
+    get: async (key) => (await pause(), fast.get(key)),
+    put: async (...args) => (await pause(), fast.put(...args)),
+    remove: fast.remove,
   });
 
   const results = await Promise.all([
@@ -98,8 +99,8 @@ test("одновременные запросы на одно место: про
 });
 
 test("анкеты переживают перезапуск сервиса: всё состояние в файле", async () => {
-  const blob = memoryBlob();
-  await setup(blob).rsvp({
+  const bucket = memoryBucket();
+  await setup(bucket).rsvp({
     id: id(1),
     name: "Гость 1",
     know: 2,
@@ -109,10 +110,10 @@ test("анкеты переживают перезапуск сервиса: в�
   });
 
   // Новый обработчик поверх того же файла — как новый экземпляр контейнера.
-  const { rsvp, guest, handler } = setup(blob);
+  const { rsvp, guest, handler } = setup(bucket);
   assert.equal((await rsvp(guest(2, { seat: 7 }))).status, 409);
   const seats = await handler({ httpMethod: "GET" });
-  assert.deepEqual(JSON.parse(seats.body), { taken: [7] });
+  assert.deepEqual(JSON.parse(String(seats.body)), { taken: [7] });
 });
 
 test("опоздавшая анкета без места не стирает уже выбранное место", async () => {
@@ -171,7 +172,7 @@ test("по id сайт узнаёт, есть ли анкета на серве�
       httpMethod: "GET",
       queryStringParameters: { id: id(n) },
     });
-    return JSON.parse(response.body);
+    return JSON.parse(String(response.body));
   };
 
   assert.deepEqual(await status(1), { taken: [], guest: null });
@@ -183,6 +184,40 @@ test("по id сайт узнаёт, есть ли анкета на серве�
   // Именинник удалил анкету — сайт гостя увидит это и начнёт приглашение заново.
   await post({ action: "remove", key: ADMIN_KEY, id: id(1) });
   assert.deepEqual(await status(1), { taken: [], guest: null });
+});
+
+test("фото: принимается к существующей анкете, отдаётся и удаляется вместе с ней", async () => {
+  const { handler, rsvp, guest, post } = setup();
+  const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(2000, 7)]);
+  /** @param {string} method @param {string} photo @param {Buffer} [body] */
+  const photo = (method, photo, body) =>
+    handler({ httpMethod: method, queryStringParameters: { photo }, body });
+  const error = async (/** @type {ReturnType<typeof photo>} */ response) => {
+    const { statusCode, body } = await response;
+    return [statusCode, JSON.parse(String(body)).error];
+  };
+
+  assert.deepEqual(await error(photo("POST", id(1), jpeg)), [404, "unknown_guest"]);
+  await rsvp(guest(1));
+  assert.deepEqual(await error(photo("GET", id(1))), [404, "no_photo"]);
+
+  assert.deepEqual(await error(photo("POST", id(1), Buffer.from("not a jpeg"))), [400, "invalid"]);
+  const huge = Buffer.concat([jpeg, Buffer.alloc(400 * 1024)]);
+  assert.deepEqual(await error(photo("POST", id(1), huge)), [413, "too_large"]);
+  assert.deepEqual(await error(photo("POST", "../guests.json", jpeg)), [400, "invalid"]);
+
+  assert.equal((await photo("POST", id(1), jpeg)).statusCode, 200);
+  const served = await photo("GET", id(1));
+  assert.equal(served.headers["Content-Type"], "image/jpeg");
+  assert.deepEqual(served.body, jpeg);
+
+  // Повторная анкета (например, с местом) не должна сбрасывать отметку о фото.
+  await rsvp(guest(1, { seat: 6 }));
+  const { guests } = (await post({ action: "list", key: ADMIN_KEY })).data;
+  assert.deepEqual([guests[0].photo, guests[0].seat], [true, 6]);
+
+  await post({ action: "remove", key: ADMIN_KEY, id: id(1) });
+  assert.deepEqual(await error(photo("GET", id(1))), [404, "no_photo"]);
 });
 
 test("без ADMIN_KEY админские действия закрыты для всех", async () => {

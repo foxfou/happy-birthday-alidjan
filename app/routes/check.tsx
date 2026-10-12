@@ -6,20 +6,24 @@ import { Stage } from "~/components/stage";
 import { KNOW, STATUS } from "~/config";
 import { type Guest, requirePendingGuest } from "~/lib/guest";
 import { prefersReducedMotion } from "~/lib/motion";
+import { loadPhoto } from "~/lib/photo";
 import { sfx } from "~/lib/sfx";
 
 const LEAD_MS = 500;
 const STEP_MS = 700;
 
 export function clientLoader() {
-  return requirePendingGuest();
+  return { guest: requirePendingGuest(), hasPhoto: loadPhoto() !== null };
 }
 
-function checkLines({ name, know, reason, skills }: Guest) {
+function checkLines({ name, know, reason, skills }: Guest, hasPhoto: boolean) {
   const acquaintance =
     know === 0 ? KNOW[0].replace(/\.+$/, "") : KNOW[know].toLowerCase();
   return [
     `Проверка имени: «${name}»… найдено`,
+    hasPhoto
+      ? "Фото 3×4… приложено, сходство установлено"
+      : "Фото 3×4… отсутствует, опознаем по голосу",
     `Сверка с базой знакомых: «${acquaintance}»… принято`,
     `Мотив явки: «${reason}»… убедительно`,
     skills.length
@@ -29,8 +33,9 @@ function checkLines({ name, know, reason, skills }: Guest) {
   ];
 }
 
-export default function Check({ loaderData: guest }: Route.ComponentProps) {
-  const lines = checkLines(guest);
+export default function Check({ loaderData }: Route.ComponentProps) {
+  const { guest, hasPhoto } = loaderData;
+  const lines = checkLines(guest, hasPhoto);
   const [reduce] = useState(prefersReducedMotion);
   // Сколько строк протокола уже напечатано; lines.length + 1 — вынесен вердикт.
   const [step, setStep] = useState(reduce ? lines.length + 1 : 0);

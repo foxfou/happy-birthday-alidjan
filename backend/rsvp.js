@@ -17,6 +17,7 @@ const MAX_GUESTS = 100;
  * @property {string} reason
  * @property {string[]} skills
  * @property {number | null} seat
+ * @property {boolean} photo к анкете приложено фото (сам файл лежит отдельно)
  * @property {Date} createdAt
  * @property {Date} updatedAt
  */
@@ -108,6 +109,8 @@ function planRsvp(guests, input, now) {
   const guest = {
     ...input,
     seat,
+    // Фото загружается отдельным запросом; повторная анкета его не сбрасывает.
+    photo: existing?.photo ?? false,
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
   };

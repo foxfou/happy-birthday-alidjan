@@ -1,29 +1,40 @@
 // @ts-check
-// Хранилище гостей одним JSON-файлом. Где лежит файл — решает blob: в бакете
-// объектного хранилища (s3-blob.js) или в памяти для тестов и локального запуска.
+// Хранилище гостей: анкеты одним JSON-файлом, фото — отдельными файлами рядом.
+// Где лежат файлы — решает bucket: в объектном хранилище (s3-bucket.js) или
+// в памяти для тестов и локального запуска.
 const { planRsvp } = require("./rsvp");
 
+const GUESTS_KEY = "guests.json";
+const photoKey = (/** @type {string} */ id) => `photos/${id}.jpg`;
+
 /**
- * @typedef {object} Blob
- * @property {() => Promise<string | null>} read содержимое файла; null — файла ещё нет
- * @property {(text: string) => Promise<void>} write
+ * @typedef {object} Bucket
+ * @property {(key: string) => Promise<Buffer | null>} get null — файла нет
+ * @property {(key: string, body: Buffer | string, contentType: string) => Promise<void>} put
+ * @property {(key: string) => Promise<void>} remove
  */
 
-/** @param {Blob} blob @returns {import("./handler").Store} */
-function createFileStore(blob) {
+/** @param {Bucket} bucket @returns {import("./handler").Store} */
+function createFileStore(bucket) {
   /** @returns {Promise<import("./rsvp").Guest[]>} */
   async function load() {
-    const text = await blob.read();
-    if (!text) return [];
-    return JSON.parse(text).map((/** @type {any} */ guest) => ({
+    const file = await bucket.get(GUESTS_KEY);
+    if (!file) return [];
+    return JSON.parse(file.toString("utf8")).map((/** @type {any} */ guest) => ({
       ...guest,
+      photo: guest.photo ?? false,
       createdAt: new Date(guest.createdAt),
       updatedAt: new Date(guest.updatedAt),
     }));
   }
 
   /** @param {import("./rsvp").Guest[]} guests */
-  const save = (guests) => blob.write(JSON.stringify(guests, null, 2));
+  const save = (guests) =>
+    bucket.put(
+      GUESTS_KEY,
+      JSON.stringify(guests, null, 2),
+      "application/json; charset=utf-8",
+    );
 
   // Изменения идут строго по одному: «прочитать файл — решить — записать» нельзя
   // перемешивать, иначе двое одновременно займут одно место. Сервис при этом
@@ -54,20 +65,37 @@ function createFileStore(blob) {
       exclusive(async () => {
         const guests = await load();
         await save(guests.filter((guest) => guest.id !== id));
+        await bucket.remove(photoKey(id));
       }),
+
+    // Фото принимается только к существующей анкете — иначе хранилище можно
+    // было бы забивать файлами под выдуманными идентификаторами.
+    savePhoto: (id, jpeg) =>
+      exclusive(async () => {
+        const guests = await load();
+        const guest = guests.find((item) => item.id === id);
+        if (!guest) return false;
+        await bucket.put(photoKey(id), jpeg, "image/jpeg");
+        if (!guest.photo) {
+          guest.photo = true;
+          await save(guests);
+        }
+        return true;
+      }),
+
+    loadPhoto: (id) => bucket.get(photoKey(id)),
   };
 }
 
-/** @returns {Blob} */
-function memoryBlob() {
-  /** @type {string | null} */
-  let text = null;
+/** @returns {Bucket} */
+function memoryBucket() {
+  /** @type {Map<string, Buffer>} */
+  const files = new Map();
   return {
-    read: async () => text,
-    write: async (next) => {
-      text = next;
-    },
+    get: async (key) => files.get(key) ?? null,
+    put: async (key, body) => void files.set(key, Buffer.from(body)),
+    remove: async (key) => void files.delete(key),
   };
 }
 
-module.exports = { createFileStore, memoryBlob };
+module.exports = { createFileStore, memoryBucket };

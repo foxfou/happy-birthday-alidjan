@@ -29,6 +29,9 @@ importers:
       react-dom:
         specifier: ^19.2.8
         version: 19.3.0(react@19.3.0)
+      react-easy-crop:
+        specifier: ^6.2.4
+        version: 6.2.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react-router:
         specifier: ^7.18.4
         version: 7.18.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1063,6 +1066,9 @@ packages:
     resolution: {integrity: sha512-BdiKAgbfRlvfMq/XzO/AF9NPmaA8a+YpLAyAFTVFBj3gARrAIfWvNq7Q7NE4se3KgFu0KkrvQMxTS0XVnsGzHg==}
     engines: {node: '>=18'}
 
+  normalize-wheel@1.0.1:
+    resolution: {integrity: sha512-1OnlAPZ3zgrk8B91HyRj+eVv+kS5u+Z0SCsak6Xil/kmgEia50ga7zfkumayonZrImffAxPU/5WcyGhzetHNPA==}
+
   p-map@7.1.0:
     resolution: {integrity: sha512-HaSJ9hNZOxTUSATfB48Qi7U2+GF1eECjI39nkeLmCWQrSOYr1z4NepR0rpWiZO77pYwUWU2cJ5NIgsmoFCsYDQ==}
     engines: {node: '>=18'}
@@ -1096,6 +1102,12 @@ packages:
     resolution: {integrity: sha512-JDk8dgif51OjFoDE70+OT9ICyYr+69HlmihNwp1+Nsfbna3t5sIiCa9ZJktDmQ4/1b/rn26hIAR2uYXDMr5r0Q==}
     peerDependencies:
       react: ^19.3.0
+
+  react-easy-crop@6.2.4:
+    resolution: {integrity: sha512-OWdnFYctzUNlekjob+bQfloG9wyhIBkkmeISnM5XVE4Byqn0jmVxDF7oz85ovUF+EIPQyj0yAHbBEFtnxwGv4g==}
+    peerDependencies:
+      react: '>=16.4.0'
+      react-dom: '>=16.4.0'
 
   react-refresh@0.14.2:
     resolution: {integrity: sha512-jCvmsr+1IUSMUyzOkRcvnVbX3ZYC6g9TDrDbFuFmRDq7PD4yaGbLKNQL6k2jnArV8hjYxh7hVhAZB6s9HDGpZA==}
@@ -2056,6 +2068,8 @@ snapshots:
 
   node-releases@2.0.58: {}
 
+  normalize-wheel@1.0.1: {}
+
   p-map@7.1.0: {}
 
   pathe@1.1.2: {}
@@ -2084,6 +2098,12 @@ snapshots:
     dependencies:
       react: 19.3.0
       scheduler: 0.28.0
+
+  react-easy-crop@6.2.4(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+    dependencies:
+      normalize-wheel: 1.0.1
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
 
   react-refresh@0.14.2: {}
 

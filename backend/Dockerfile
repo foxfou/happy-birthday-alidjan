@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
-COPY server.js handler.js rsvp.js file-store.js s3-blob.js ./
+COPY server.js handler.js rsvp.js file-store.js s3-bucket.js ./
 
 # Container Apps запускает контейнер от непривилегированного пользователя с UID 1000 — это node.
 USER node
